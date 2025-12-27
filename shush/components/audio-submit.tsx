@@ -16,15 +16,31 @@ import ShareUrl from "./share-url";
 type Props = {
   setFile: React.Dispatch<React.SetStateAction<File | undefined>>;
   file: File;
+  task: "transcribe" | "translate";
+  language?: string;
+  targetLanguage?: string;
 };
 
-export default function AudioSubmit({ setFile, file }: Props) {
+export default function AudioSubmit({
+  setFile,
+  file,
+  task,
+  language,
+  targetLanguage,
+}: Props) {
   const [submitted, setSubmitted] = useState(false);
   const [open, setOpen] = useState(false);
   const [call_id, setCall_id] = useState("");
   async function submitAudio() {
     const formData = new FormData();
     formData.append("audio", file);
+    formData.append("task", task);
+    if (language) {
+      formData.append("language", language);
+    }
+    if (targetLanguage) {
+      formData.append("target_language", targetLanguage);
+    }
     const promise = () =>
       fetch(`${process.env.NEXT_PUBLIC_MODAL_URL}/transcribe`, {
         method: "POST",
