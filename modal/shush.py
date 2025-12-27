@@ -21,6 +21,7 @@ MIN_CONTAINERS = int(os.environ.get("WHISPER_MIN_CONTAINERS", "0"))
 BATCH_SIZE = int(os.environ.get("WHISPER_BATCH_SIZE", "8"))
 CHUNK_LENGTH_S = int(os.environ.get("WHISPER_CHUNK_LENGTH_S", "20"))
 MAX_NEW_TOKENS = int(os.environ.get("WHISPER_MAX_NEW_TOKENS", "128"))
+USE_BETTERTRANSFORMER = os.environ.get("WHISPER_BETTERTRANSFORMER", "1") != "0"
 FLASH_ATTN_WHEEL = (
     "https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/"
     "flash_attn-2.8.3+cu12torch2.5cxx11abiFALSE-cp311-cp311-linux_x86_64.whl"
@@ -139,6 +140,8 @@ image = (
     .pip_install(
         "torch==2.5.1",
         "transformers==4.57.3",
+        "optimum",
+        "accelerate",
         "einops",
         "ninja",
         "packaging",
@@ -209,6 +212,15 @@ class WhisperV3:
         if hasattr(model, "generation_config"):
             model.generation_config.forced_decoder_ids = None
             model.generation_config.task = "transcribe"
+        if USE_BETTERTRANSFORMER:
+            try:
+                from optimum.bettertransformer import BetterTransformer
+
+                model = BetterTransformer.transform(model)
+                model.to(self.device)
+                print("BetterTransformer enabled")
+            except Exception as exc:
+                print(f"BetterTransformer not available: {exc}")
         self.pipe = pipeline(
             "automatic-speech-recognition",
             model=model,
